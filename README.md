@@ -9,6 +9,6 @@ Python external module/library used:
  - Paho-Mqtt (MQTT client)
 
 DONATE:
- -PAYPAL : SentinelCreative
- -BNI : 0718053662 (Khyarul Arham)
- -Mandiri : 1130012279398 (Khyarul Arham)
+ - PAYPAL : SentinelCreative
+ - BNI : 0718053662 (Khyarul Arham)
+ - Mandiri : 1130012279398 (Khyarul Arham)
