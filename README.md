@@ -1,7 +1,7 @@
 # S.C.A.N
  Small and Cheap Attendance Node
 
-# Node Machine
+# Attendance Node Machine
 Hardware: ESP8266 Wemos D1 Mini
 Software: Arduino C/C++
 
@@ -23,7 +23,7 @@ Python external module/library used:
  - Pyqt5 (for GUI)
  - PyMongo (for MongoDB Database driver)
  - Paho-Mqtt (MQTT client)
- - Threading (Multitasking using Multithreading, 1 thread per Node)
+ - Threading (Multitasking using Multithreading, 1 thread per 1 Attendance Node Machine)
 
 DONATE: 
   - PAYPAL  : [SentinelCreative](https://www.paypal.me/sentinelcreative "PAYPAL")
