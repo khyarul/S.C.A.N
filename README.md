@@ -14,7 +14,7 @@ Feature and library used:
  - solenoid door lock port max. 12V/1A (12W)
  - 5V/3A (15W) power supply input
 
-# GUI
+# GUI (Node Monitor & Employee Manager)
 Main file: **"SCAN_node_monitor.py"** (**"karyawan.py"**, **"icons"**, and **"images" need to be in the same folder**)
 
 Python external module/library used:
