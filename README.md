@@ -18,7 +18,7 @@ Feature and library used:
 Main file: **"SCAN_node_monitor.py"** (**"karyawan.py"**, **"icons"**, and **"images" need to be in the same folder**)
 
 Python external module/library used:
- - **Python 3.7
+ - **Python 3.7**
  - Pyqt5 (for GUI)
  - PyMongo (for MongoDB Database driver)
  - Paho-Mqtt (MQTT client)
