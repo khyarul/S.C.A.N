@@ -2,8 +2,7 @@
  Small and Cheap Attendance Node
 
 # Attendance Node Machine
-Hardware: ESP8266 Wemos D1 Mini
-Software: Arduino C/C++
+Hardware: ESP8266 Wemos D1 Mini - Software: Arduino C/C++
 
 Feature and library used:
  - Scheduler.h (Multitask)
