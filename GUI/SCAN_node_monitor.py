@@ -10,6 +10,9 @@ from PIL import Image
 from pymongo import MongoClient
 ########MQTT Module#############
 import paho.mqtt.client as mqttClient
+################################
+import threading
+import time
 
 #################Inisiasi Database#######################
 dbClient = MongoClient("mongodb://localhost:27017/")
@@ -39,6 +42,7 @@ def on_connect(client, userdata, flags, rc):
 def on_message(client, userdata, message):
     message.payload = message.payload.decode('utf-8')
     topic = message.topic
+    print(topic + ':', message.payload)
 
 
 ###############MQTT global variable####################
@@ -126,10 +130,10 @@ class MainWindow(QWidget):
 
         self.nodeLabel = QLabel('Node List')
         self.nodeLabel.setFont(font1)
-        self.refreshBtn = QPushButton('PING')
-        self.refreshBtn.setIcon(QIcon('icons/refresh.png'))
-        self.refreshBtn.setFont(font)
-        self.refreshBtn.clicked.connect(self.getNode)
+        self.pingBtn = QPushButton('PING')
+        self.pingBtn.setIcon(QIcon('icons/ping.png'))
+        self.pingBtn.setFont(font)
+        self.pingBtn.clicked.connect(self.getNode)
         self.nodeList = QListWidget()
         self.nodeList.itemSelectionChanged.connect(self.showNode)
         self.addBtn = QPushButton('Add')
@@ -193,8 +197,7 @@ class MainWindow(QWidget):
         self.leftBotLayout.addWidget(self.logList)
 
         self.rightTopLayout.addWidget(self.nodeLabel)
-        self.rightTopLayout.addWidget(self.refreshBtn)
-        self.rightTopLayout.addStretch()
+        self.rightTopLayout.addWidget(self.pingBtn)
         self.rightLayout.addLayout(self.rightTopLayout)
         self.rightLayout.addWidget(self.nodeList)
         self.rightLayout.addLayout(self.rightBotLayout)
@@ -263,7 +266,7 @@ class MainWindow(QWidget):
         self.newNode = AddNode()
 
     def editNode(self):
-        pass
+        self.editnode = EditNode()
 
     def deleteNode(self):
         if self.nodeList.selectedItems():
@@ -306,6 +309,14 @@ class MainWindow(QWidget):
                 client.connect(Host, int(Port), 60)
                 client.loop_start()
                 self.connectStatus.setText('CONNECTED')
+                for x in range(self.nodeList.count()):
+                    data = self.nodeList.item(x).text()
+                    clientID = data.split(' - ')[1]
+                    client.subscribe('STATUS/' + clientID)
+                    self.connectThread = threading.Thread(target=self.connectThreadFunc, args=[clientID])
+                    self.connectThread.start()
+                self.pingThread = threading.Thread(target=self.pingFunc)
+                self.pingThread.start()
             except:
                 print('Connection Failed')
                 self.connectBtn.setChecked(False)
@@ -318,6 +329,19 @@ class MainWindow(QWidget):
         Popen('python karyawan.py')
         # os.system('python karyawan.py')
         # call(['python', 'karyawan.py'])
+
+    def connectThreadFunc(self, clientID):
+        global client
+        while True:
+            if self.connectBtn.isChecked() == False:
+                break
+
+    def pingFunc(self):
+        while True:
+            if self.connectBtn.isChecked() == False:
+                break
+            client.publish('PING', 'ping')
+            time.sleep(5)
 
 
 ################################################################################
@@ -362,6 +386,64 @@ class AddNode(QWidget):
         self.setLayout(self.mainLayout)
 
     def addFunc(self):
+        Alias = self.aliasInput.text()
+        ClientID = self.clientInput.text()
+
+        result_count = collection.count_documents({'Client ID': ClientID})
+        if Alias and ClientID != '':
+            if result_count == 0:
+                data = {'Alias': Alias, 'Client ID': ClientID}
+                collection.insert_one(data)
+                QMessageBox.information(self, 'SUCCESS', 'New Node has been added')
+                w.getNode()
+            else:
+                QMessageBox.information(self, 'WARNING', 'Client ID already exist, try again')
+        else:
+            QMessageBox.information(self, 'WARNING', 'Fields can not be empty')
+
+
+################################################################################
+class EditNode(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle('Update Node')
+        # self.setWindowIcon(QIcon('icons/person.png'))
+        self.resize(300, 100)
+        self.setup()
+        self.show()
+
+    def setup(self):
+        self.widget()
+        self.layouts()
+
+    def widget(self):
+        self.aliasLabel = QLabel('Alias')
+        self.clientLabel = QLabel('Client ID')
+        self.aliasInput = QLineEdit()
+        self.aliasInput.setPlaceholderText('Alias (Can be location name or something)')
+        self.clientInput = QLineEdit()
+        self.clientInput.setText('Node_')
+        self.clientInput.setPlaceholderText('Should be unique')
+        self.addBtn = QPushButton('Update Node')
+        self.addBtn.setFixedWidth(100)
+        self.addBtn.clicked.connect(self.editFunc)
+
+    def layouts(self):
+        ##########################LAYOUT###############################
+        self.mainLayout = QGridLayout()
+        ###################Tambah Widget ke Layout#####################
+        self.mainLayout.setAlignment(Qt.AlignLeft)
+        self.mainLayout.addWidget(self.aliasLabel, 0, 0)
+        self.mainLayout.addWidget(QLabel(':'), 0, 1)
+        self.mainLayout.addWidget(self.aliasInput, 0, 2)
+        self.mainLayout.addWidget(self.clientLabel, 1, 0)
+        self.mainLayout.addWidget(QLabel(':'), 1, 1)
+        self.mainLayout.addWidget(self.clientInput, 1, 2)
+        self.mainLayout.addWidget(self.addBtn, 2, 2)
+        ##################Atur Main Windows Layout#####################
+        self.setLayout(self.mainLayout)
+
+    def editFunc(self):
         Alias = self.aliasInput.text()
         ClientID = self.clientInput.text()
 
