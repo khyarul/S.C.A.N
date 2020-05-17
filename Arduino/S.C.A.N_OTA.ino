@@ -30,7 +30,7 @@ const char* host PROGMEM = "S.C.A.N-Node_1";      //OTA host name, bebas
 const char* username PROGMEM = "sentinel";        //mqtt username
 const char* password PROGMEM = "I.A.N.H";         //mqtt pass
 
-int8_t BUZZER = 0, preButton = 1, doorButton = 1, SCREEN = 1;
+int8_t BUZZER = 0, preButton = 1, doorButton = 1, SCREEN = 1, MODE = 0;
 uint8_t screenTimer = 10;   //Screen will turn OFF after x seconds idle (default 10s)
 
 WiFiClient wemos;
@@ -52,7 +52,20 @@ class mainLoop : public Task {
     void loop() {
 mulai:
       lcd.setCursor(0, 0); lcd.print(TIME);
-      lcd.setCursor(0, 1); lcd.print(F("  PLEASE SCAN  "));
+      if (preButton == 0) {
+        SCREEN = 1;
+        MODE = 1;
+      }
+      else if (doorButton == 0) {
+        SCREEN = 1;
+        MODE = 0;
+      }
+      if (MODE == 0) {
+        lcd.setCursor(0, 1); lcd.print(F(" TAP TO UNLOCK "));
+      }
+      else {
+        lcd.setCursor(0, 1); lcd.print(F("ATTENDANCE MODE"));
+      }
       yield();
       // Reset the loop if no new card present on the sensor/reader. This saves the entire process when idle. And if present, select one.
       if (!rfid.PICC_IsNewCardPresent() || !rfid.PICC_ReadCardSerial()) {
@@ -67,7 +80,12 @@ mulai:
         idStr += String(rfid.uid.uidByte[i], HEX);
       }
       idStr.toUpperCase();
-
+      if (MODE == 0){
+        idStr = "0:" + idStr;
+      }
+      else {
+        idStr = "1:" + idStr;
+      }
       lcd.clear();
       lcd.setCursor(0, 0); lcd.print(F("Checking..."));
       //      lcd.setCursor(0, 0); lcd.print(rfid.PICC_GetTypeName(piccType));
@@ -85,15 +103,18 @@ mulai:
           lcd.setCursor(0, 1); lcd.print(F("UNREGISTERED ID"));
           break;
         }
-        else if (RESPON == "1") {
-          BUZZER = 2;
-          lcd.clear();
-          lcd.setCursor(0, 0); lcd.print(F("    Sorry :(   "));
-          lcd.setCursor(0, 1); lcd.print(F("DUPLICATED ID"));
-          break;
-        }
+//        else if (RESPON == "1") {
+//          BUZZER = 2;
+//          lcd.clear();
+//          lcd.setCursor(0, 0); lcd.print(F("    Sorry :(   "));
+//          lcd.setCursor(0, 1); lcd.print(F("DUPLICATED ID"));
+//          break;
+//        }
         else {
           BUZZER = 1;
+          if (MODE == 0) {
+            LOCK = "0";
+          }
           lcd.clear();
           lcd.setCursor(0, 0); lcd.print(F("SUCCESS, WELCOME"));
           lcd.setCursor(0, 1); lcd.print(RESPON);
@@ -102,6 +123,7 @@ mulai:
         yield();
       }
       RESPON = "";
+      MODE = 0;
       rfid.PICC_HaltA();        // Halt PICC
       rfid.PCD_StopCrypto1();   // Stop encryption on PCD
       delay(2000);
@@ -131,9 +153,16 @@ class buttonLoop : public Task {
     void loop() {
       preButton = digitalRead(TX);
       doorButton = digitalRead(D3);
+      delay(50);
+    }
+} button_loop;
+//==================================================================
+class solenoidLoop : public Task {
+  public:
+    void loop() {
       if (LOCK == "0") {  //kunci OFF, buka kunci, solenoid ON
         lock_OFF;
-        BUZZER = 2;
+        BUZZER = 1;
         delay(5000);
         lock_ON;
         delay(200);
@@ -144,7 +173,7 @@ class buttonLoop : public Task {
       LOCK = "";
       delay(50);
     }
-} button_loop;
+} solenoid_loop;
 //==================================================================
 class buzzerLoop : public Task {
   public:
@@ -258,6 +287,7 @@ void setup() {
   Scheduler.start(&mqtt_loop);
   Scheduler.start(&main_loop);
   Scheduler.start(&button_loop);
+  Scheduler.start(&solenoid_loop);
   Scheduler.start(&buzzer_loop);
   Scheduler.start(&screen_loop);
   SCREEN = 1;
