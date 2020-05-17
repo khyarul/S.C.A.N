@@ -1,11 +1,11 @@
 """Programmed by Khyarul Arham"""
 ########GUI Module#######
 from subprocess import Popen
-import sys, os
+import sys
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
-from PIL import Image
+# from PIL import Image
 ########Database Module#########
 from pymongo import MongoClient
 ########MQTT Module#############
@@ -69,11 +69,10 @@ Username = ''
 Password = ''
 Host = ''
 Port = None
-client = mqttClient.Client(Client)
 nodeStatusVar = {}
 
-
 #################Inisiasi MQTT###########################
+client = mqttClient.Client(Client)
 
 
 #################Main Window########################
@@ -403,10 +402,10 @@ class MainWindow(QWidget):
                 client.disconnect()
                 self.connectBtn.setChecked(False)
                 self.connectStatus.setText('DISCONNECTED')
-                nodeStatusVar[str(clientID)] = None
+                nodeStatusVar[clientID] = None
                 break
             if TOPIC == ('STATUS/' + clientID):
-                nodeStatusVar[str(clientID)] = PAYLOAD
+                nodeStatusVar[clientID] = PAYLOAD
                 self.refreshNode()
                 TOPIC = None
                 PAYLOAD = None
@@ -427,13 +426,13 @@ class MainWindow(QWidget):
                         clock = now.strftime('%H:%M:%S')
                         message = '{} UNKNOWN UID:{}, trying to unlock door at {}'.format(clock, uid, clientID)
                         self.logList.addItem(message)
-                    else:  # MATCH Unique UID on database send back 'name'
+                    elif resultCount == 1:  # MATCH Unique UID on database send back 'name'
                         for x in employeeCollection.find(query):
                             name = x['Name']
                         client.publish('RESPON/' + clientID, name)
                         ########Add to log##########
                         clock = now.strftime('%H:%M:%S')
-                        message = '{} UID:{} Name:{}, unlock door at {}'.format(clock, name, uid, clientID)
+                        message = '{} UID:{} Name:{}, unlock door at {}'.format(clock, uid, name, clientID)
                         self.logList.addItem(message)
                 #########ATTENDANCE MODE##########
                 elif mode == '1':
@@ -443,7 +442,7 @@ class MainWindow(QWidget):
                         clock = now.strftime('%H:%M:%S')
                         message = '{} UNKNOWN UID:{}, trying to attend at {}'.format(clock, uid, clientID)
                         self.logList.addItem(message)
-                    else:  # MATCH Unique UID on database send back 'name'
+                    elif resultCount == 1:  # MATCH Unique UID on database send back 'name'
                         for x in employeeCollection.find(query):
                             name = x['Name']
                         if date in x:  # If person has attend
@@ -455,8 +454,10 @@ class MainWindow(QWidget):
                         client.publish('RESPON/' + clientID, name)
                         ########Add to log##########
                         clock = now.strftime('%H:%M:%S')
-                        message = '{} UID:{} Name:{}, attend at {}'.format(clock, name, uid, clientID)
+                        message = '{} UID:{} Name:{}, attend at {}'.format(clock, uid, name, clientID)
                         self.logList.addItem(message)
+                TOPIC = None
+                PAYLOAD = None
 
     def pingFunc(self):
         global client, RC
