@@ -92,7 +92,7 @@ class MainWindow(QWidget):
         list = collection.find().sort('Name', 1)
         for x in list:
             count += 1
-            self.karyawanList.addItem(str(count) + '. ' + x['Name'] + ' - ' + x['_id'])
+            self.karyawanList.addItem(str(count) + '. ' + x['Name'] + ' - ' + x['UID'])
         self.karyawanList.setCurrentRow(0)  # atur kursor ke item pertama
 
     def showKaryawan(self):
@@ -104,7 +104,7 @@ class MainWindow(QWidget):
 
             data = self.karyawanList.currentItem().text()
             id = data.split(' - ')[1]
-            list = collection.find({'_id': id})
+            list = collection.find({'UID': id})
             for x in list: pass
             img = QLabel()
             img.setPixmap(QPixmap(x['Picture']).scaled(128, 128))
@@ -114,7 +114,7 @@ class MainWindow(QWidget):
             img.setStyleSheet('background-color: white')
             font = QFont()
             font.setBold(True)
-            UID = QLabel(x['_id'])
+            UID = QLabel(x['UID'])
             UID.setFont(font)
             UID.setFrameShape(QFrame.WinPanel)
             UID.setFrameShadow(QFrame.Sunken)
@@ -158,7 +158,7 @@ class MainWindow(QWidget):
                                            QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             if message == QMessageBox.Yes:
                 try:
-                    collection.delete_one({'_id': id})
+                    collection.delete_one({'UID': id})
                     QMessageBox.information(self, 'SUCCESS', 'This Person has been deleted')
                     self.getKaryawan()
                 except:
@@ -259,15 +259,16 @@ class EditKaryawan(QWidget):
         self.setLayout(self.mainLayout)
 
     def getPerson(self):
-        global globalID
-        list = collection.find({'_id': globalID})
+        global globalID, newPath
+        list = collection.find({'UID': globalID})
         for x in list: pass
-        self.UID = x['_id']
+        self.UID = x['UID']
         self.Name = x['Name']
         self.Phone = x['Phone']
         self.Email = x['Email']
         self.Address = x['Address']
         self.Picture = x['Picture']
+        newPath = self.Picture
 
     def browsePic(self):
         global newPath
@@ -285,18 +286,19 @@ class EditKaryawan(QWidget):
         Phone = self.phoneInput.text()
         Email = self.emailInput.text()
         Address = self.addressInput.toPlainText()
-        if self.Picture != newPath:
-            Picture = self.Picture
-        else:
-            Picture = newPath
+        Picture = newPath
 
         if UID and Name and Phone and Email and Address != '':
             global globalID
-            data = {'_id': UID, 'Name': Name, 'Picture': Picture, 'Phone': Phone, 'Email': Email,
-                    'Address': Address}
-            collection.update_one({'_id': globalID}, {'$set': data})
-            QMessageBox.information(self, 'SUCCESS', 'The Employee has been updated')
-            w.getKaryawan()
+            data = {'UID': UID, 'Name': Name, 'Picture': Picture, 'Phone': Phone, 'Email': Email, 'Address': Address}
+            try:
+                query = {'UID': globalID}
+                newValue = {'$set': data}
+                collection.update_one(query, newValue)
+                QMessageBox.information(self, 'SUCCESS', 'The Employee has been updated')
+                w.getKaryawan()
+            except:
+                print(globalID)
         else:
             QMessageBox.information(self, 'WARNING', 'Fields can not be empty')
 
@@ -316,11 +318,13 @@ class AddKaryawan(QWidget):
         self.layouts()
 
     def widget(self):
+        global newPath
+        newPath = 'images/person.png'
         #############top widget###################
         self.setStyleSheet('font-size:11pt;font-family:Arial Bold;')
         # self.title = QLabel('Add Employee')
         self.newPersonImg = QLabel()
-        self.newPersonImg.setPixmap(QPixmap('images/person.png'))
+        self.newPersonImg.setPixmap(QPixmap(newPath))
         self.picButton = QPushButton('Browse Picture')
         self.picButton.setStyleSheet('background-color:orange;font-size:10;')
         self.picButton.clicked.connect(self.browsePic)
@@ -392,12 +396,12 @@ class AddKaryawan(QWidget):
         Email = self.emailInput.text()
         Address = self.addressInput.toPlainText()
 
-        query = {'_id': UID}
+        query = {'UID': UID}
         result_count = collection.count_documents(query)
 
         if UID and Name and Phone and Email and Address != '':
             if result_count == 0:
-                data = {'_id': UID, 'Name': Name, 'Picture': Picture, 'Phone': Phone, 'Email': Email,
+                data = {'UID': UID, 'Name': Name, 'Picture': Picture, 'Phone': Phone, 'Email': Email,
                         'Address': Address}
                 collection.insert_one(data)
                 QMessageBox.information(self, 'SUCCESS', 'New Employee has been added')

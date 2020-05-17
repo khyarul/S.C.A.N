@@ -13,36 +13,53 @@ import paho.mqtt.client as mqttClient
 ################################
 import threading
 import time
+from datetime import datetime
 
 #################Inisiasi Database#######################
 dbClient = MongoClient("mongodb://localhost:27017/")
 db = dbClient['ATTENDANCE']
-collection = db['NODE']
-
+nodeCollection = db['NODE']
+employeeCollection = db['KARYAWAN']
 
 #################MQTT Callback Event###########################
+RC = -1
+
+
 def on_connect(client, userdata, flags, rc):
-    print('Code', str(rc), end=' ')
+    # print('Code', str(rc), end=' ')
+    global RC
+    RC = rc
     if rc == 0:
-        # Client.subscribe('UID/Node_' + NODE)
-        # Client.subscribe('STATUS/Node_' + NODE, 2)
-        print('Connection successful')
+        pass
+    # Client.subscribe('UID/Node_' + NODE)
+    # Client.subscribe('STATUS/Node_' + NODE, 2)
+    # print('Connection successful')
     elif rc == 1:
-        print('Connection refused - incorrect protocol version')
+        pass
+    # print('Connection refused - incorrect protocol version')
     elif rc == 2:
-        print('Connection refused - invalid client identifier')
+        pass
+    # print('Connection refused - invalid client identifier')
     elif rc == 3:
-        print('Connection refused - server unavailable')
+        pass
+    # print('Connection refused - server unavailable')
     elif rc == 4:
-        print('Connection refused - bad username or password')
+        pass
+    # print('Connection refused - bad username or password')
     elif rc == 5:
-        print('Connection refused - not authorised')
+        pass
+    # print('Connection refused - not authorised')
+
+
+TOPIC = None
+PAYLOAD = None
 
 
 def on_message(client, userdata, message):
-    message.payload = message.payload.decode('utf-8')
-    topic = message.topic
-    print(topic + ':', message.payload)
+    global TOPIC, PAYLOAD
+    PAYLOAD = message.payload = message.payload.decode('utf-8')
+    TOPIC = message.topic
+    # print(TOPIC + ':', PAYLOAD)
 
 
 ###############MQTT global variable####################
@@ -52,6 +69,8 @@ Username = ''
 Password = ''
 Host = ''
 Port = None
+client = mqttClient.Client(Client)
+nodeStatusVar = {}
 
 
 #################Inisiasi MQTT###########################
@@ -98,7 +117,7 @@ class MainWindow(QWidget):
         self.toggleAuth()
         self.authCheck.toggled.connect(self.toggleAuth)
         self.connectBtn = QRadioButton('CONNECT')
-        self.connectBtn.setStyleSheet('background-color: rgb(122,255,112);')
+        self.connectBtn.setStyleSheet('background-color: rgb(122, 255, 112);')
         self.connectBtn.setIcon(QIcon('icons/connect'))
         self.connectBtn.setFont(font)
         self.connectBtn.setFixedWidth(100)
@@ -115,6 +134,7 @@ class MainWindow(QWidget):
         self.unlockDoorBtn.setIcon(QIcon('icons/unlock'))
         self.unlockDoorBtn.setFont(font)
         self.unlockDoorBtn.setFixedWidth(100)
+        self.unlockDoorBtn.clicked.connect(self.unlockDoor)
 
         self.serverConfigFrame = QFrame()
         self.serverConfigFrame.setStyleSheet('background-color: white;')
@@ -241,26 +261,52 @@ class MainWindow(QWidget):
 
     def getNode(self):
         self.nodeList.clear()
-        list = collection.find().sort('Alias', 1)
+        list = nodeCollection.find().sort('Alias', 1)
         for x in list:
             self.nodeList.addItem(x['Alias'] + ' - ' + x['Client ID'])
         self.nodeList.setCurrentRow(0)  # atur kursor ke item pertama
 
     def showNode(self):
         try:
-            self.nodeAlias.setText('')
-            self.nodeClient.setText('')
-            self.nodeStatus.setText('')
-            self.nodeDoorStatus.setText('')
+            # self.nodeAlias.setText('')
+            # self.nodeClient.setText('')
 
             data = self.nodeList.currentItem().text()
             clientID = data.split(' - ')[1]
-            list = collection.find({'Client ID': clientID})
-            for x in list: pass
-            self.nodeAlias.setText(x['Alias'])
-            self.nodeClient.setText(x['Client ID'])
+            clientAlias = data.split(' - ')[0]
+            # list = nodeCollection.find({'Client ID': clientID})
+            # for x in list: pass
+            self.nodeAlias.setText(clientAlias)
+            self.nodeClient.setText(clientID)
+            self.nodeStatus.setText('')
+            self.nodeDoorStatus.setText('')
+            try:
+                if nodeStatusVar[clientID] == '1':
+                    self.nodeStatus.setText('CONNECTED')
+                    self.nodeStatus.setStyleSheet('color:green')
+                elif nodeStatusVar[clientID] == '0':
+                    self.nodeStatus.setText('DISCONNECTED')
+                    self.nodeStatus.setStyleSheet('color:red')
+            except:
+                pass
         except:
             QMessageBox.information(self, 'WARNING', 'This Node is no longer available on Database')
+
+    def refreshNode(self):
+        global nodeStatusVar
+        data = self.nodeList.currentItem().text()
+        clientID = data.split(' - ')[1]
+        self.nodeStatus.setText('')
+        self.nodeDoorStatus.setText('')
+        try:
+            if nodeStatusVar[str(clientID)] == '1':
+                self.nodeStatus.setText('CONNECTED')
+                self.nodeStatus.setStyleSheet('color:green')
+            elif nodeStatusVar[str(clientID)] == '0':
+                self.nodeStatus.setText('DISCONNECTED')
+                self.nodeStatus.setStyleSheet('color:red')
+        except:
+            pass
 
     def addNode(self):
         self.newNode = AddNode()
@@ -276,7 +322,7 @@ class MainWindow(QWidget):
                                            QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             if message == QMessageBox.Yes:
                 try:
-                    collection.delete_one({'Client ID': clientID})
+                    nodeCollection.delete_one({'Client ID': clientID})
                     QMessageBox.information(self, 'SUCCESS', 'This Node has been removed')
                     self.getNode()
                 except:
@@ -293,7 +339,7 @@ class MainWindow(QWidget):
             self.passInput.setEnabled(False)
 
     def connectMqtt(self):
-        global client
+        global client, RC
         Client = self.clientIDInput.text()
         Username = self.usernameInput.text()
         Password = self.passInput.text()
@@ -306,24 +352,43 @@ class MainWindow(QWidget):
             client.on_message = on_message
             client.on_connect = on_connect
             try:
+                RC = -1
                 client.connect(Host, int(Port), 60)
                 client.loop_start()
                 self.connectStatus.setText('CONNECTED')
+                now = datetime.now()
+                date = now.strftime('%d/%m/%Y')
+                clock = now.strftime('%H:%M:%S')
+                item = self.logList.findItems(date, Qt.MatchExactly)
+                if len(item) == 0:
+                    self.logList.addItem(date)
+                self.logList.addItem(clock + ' CONNECTED to ' + Host + ':' + Port)
                 for x in range(self.nodeList.count()):
                     data = self.nodeList.item(x).text()
                     clientID = data.split(' - ')[1]
                     client.subscribe('STATUS/' + clientID)
-                    self.connectThread = threading.Thread(target=self.connectThreadFunc, args=[clientID])
-                    self.connectThread.start()
-                self.pingThread = threading.Thread(target=self.pingFunc)
-                self.pingThread.start()
+                    connectThread = threading.Thread(target=self.connectThreadFunc, args=[clientID])
+                    connectThread.start()
+                pingThread = threading.Thread(target=self.pingFunc)
+                pingThread.start()
             except:
-                print('Connection Failed')
+                # print('Connection Failed')
+                client.disconnect()
                 self.connectBtn.setChecked(False)
                 self.connectStatus.setText('DISCONNECTED')
         else:
             client.disconnect()
             self.connectStatus.setText('DISCONNECTED')
+            self.nodeStatus.setText('')
+            self.nodeDoorStatus.setText('')
+            now = datetime.now()
+            date = now.strftime('%d/%m/%Y')
+            clock = now.strftime('%H:%M:%S')
+            item = self.logList.findItems(date, Qt.MatchExactly)
+            if len(item) == 0:
+                self.logList.addItem(date)
+            self.logList.addItem(clock + ' DISCONNECTED from ' + Host + ':' + Port + ' RC=' + str(RC))
+            RC = -1
 
     def openEmployee(self):
         Popen('python karyawan.py')
@@ -331,17 +396,88 @@ class MainWindow(QWidget):
         # call(['python', 'karyawan.py'])
 
     def connectThreadFunc(self, clientID):
-        global client
+        global client, TOPIC, PAYLOAD, nodeStatusVar, RC
         while True:
-            if self.connectBtn.isChecked() == False:
+            if self.connectBtn.isChecked() == False or RC > 0:
+                client.disconnect()
+                self.connectBtn.setChecked(False)
+                self.connectStatus.setText('DISCONNECTED')
+                nodeStatusVar[str(clientID)] = None
                 break
+            if TOPIC == ('STATUS/' + clientID):
+                nodeStatusVar[str(clientID)] = PAYLOAD
+                self.refreshNode()
+                TOPIC = None
+                PAYLOAD = None
+            if TOPIC == ('UID/' + clientID):
+                now = datetime.now()
+                date = now.strftime('%d/%m/%Y')
+                clock = now.strftime('%H:%M')
+                ######Read data from topic 'UID/node_x'########
+                mode = PAYLOAD.split(':')[0]  # MODE STRING
+                uid = PAYLOAD.split(':')[1]  # UID STRING
+                query = {'UID': uid}
+                resultCount = employeeCollection.count_documents(query)
+                #########UNLOCK DOOR MODE##########
+                if mode == '0':
+                    if resultCount == 0:  # if no matching uid send 0
+                        client.publish('RESPON/' + clientID, 0)
+                        ########Add to log##########
+                        clock = now.strftime('%H:%M:%S')
+                        message = '{} UNKNOWN UID:{}, trying to unlock door at {}'.format(clock, uid, clientID)
+                        self.logList.addItem(message)
+                    else:  # MATCH Unique UID on database send back 'name'
+                        for x in employeeCollection.find(query):
+                            name = x['Name']
+                        client.publish('RESPON/' + clientID, name)
+                        ########Add to log##########
+                        clock = now.strftime('%H:%M:%S')
+                        message = '{} UID:{} Name:{}, unlock door at {}'.format(clock, name, uid, clientID)
+                        self.logList.addItem(message)
+                #########ATTENDANCE MODE##########
+                elif mode == '1':
+                    if resultCount == 0:  # if no matching uid send 0
+                        client.publish('RESPON/' + clientID, 0)
+                        ########Add to log##########
+                        clock = now.strftime('%H:%M:%S')
+                        message = '{} UNKNOWN UID:{}, trying to attend at {}'.format(clock, uid, clientID)
+                        self.logList.addItem(message)
+                    else:  # MATCH Unique UID on database send back 'name'
+                        for x in employeeCollection.find(query):
+                            name = x['Name']
+                        if date in x:  # If person has attend
+                            x[date][1] = clock
+                        else:  # if person has not attend
+                            x[date] = [clock, None]
+                        newValue = {'$set': x}
+                        employeeCollection.update_one(query, newValue)
+                        client.publish('RESPON/' + clientID, name)
+                        ########Add to log##########
+                        clock = now.strftime('%H:%M:%S')
+                        message = '{} UID:{} Name:{}, attend at {}'.format(clock, name, uid, clientID)
+                        self.logList.addItem(message)
 
     def pingFunc(self):
+        global client, RC
         while True:
-            if self.connectBtn.isChecked() == False:
-                break
+            now = datetime.now()
+            date = now.strftime('%a,%d/%b')
+            clock = now.strftime(' %H:%M')
+            client.publish('TIME', date + clock)
             client.publish('PING', 'ping')
+            if self.connectBtn.isChecked() == False or RC > 0:
+                # RC = -1
+                client.disconnect()
+                self.connectBtn.setChecked(False)
+                self.connectStatus.setText('DISCONNECTED')
+                break
             time.sleep(5)
+
+    def unlockDoor(self):
+        global client
+        data = self.nodeList.currentItem().text()
+        clientID = data.split(' - ')[1]
+        client.publish('LOCK/' + clientID, 0)
 
 
 ################################################################################
@@ -389,11 +525,11 @@ class AddNode(QWidget):
         Alias = self.aliasInput.text()
         ClientID = self.clientInput.text()
 
-        result_count = collection.count_documents({'Client ID': ClientID})
+        result_count = nodeCollection.count_documents({'Client ID': ClientID})
         if Alias and ClientID != '':
             if result_count == 0:
                 data = {'Alias': Alias, 'Client ID': ClientID}
-                collection.insert_one(data)
+                nodeCollection.insert_one(data)
                 QMessageBox.information(self, 'SUCCESS', 'New Node has been added')
                 w.getNode()
             else:
@@ -447,11 +583,11 @@ class EditNode(QWidget):
         Alias = self.aliasInput.text()
         ClientID = self.clientInput.text()
 
-        result_count = collection.count_documents({'Client ID': ClientID})
+        result_count = nodeCollection.count_documents({'Client ID': ClientID})
         if Alias and ClientID != '':
             if result_count == 0:
                 data = {'Alias': Alias, 'Client ID': ClientID}
-                collection.insert_one(data)
+                nodeCollection.insert_one(data)
                 QMessageBox.information(self, 'SUCCESS', 'New Node has been added')
                 w.getNode()
             else:
