@@ -367,6 +367,7 @@ class MainWindow(QWidget):
                     data = self.nodeList.item(x).text()
                     clientID = data.split(' - ')[1]
                     client.subscribe('STATUS/' + clientID)
+                    client.subscribe('UID/' + clientID)
                     connectThread = threading.Thread(target=self.connectThreadFunc, args=[clientID])
                     connectThread.start()
                 pingThread = threading.Thread(target=self.pingFunc)
