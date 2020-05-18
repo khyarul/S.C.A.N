@@ -5,6 +5,7 @@
 Hardware: ESP8266 Wemos D1 Mini - Software: Arduino C/C++
 
 Feature and library used:
+ - Dual Mode: Tap to Unlock Door and Attendance Mode
  - Scheduler.h (Multitask)
  - PubSubClient.h (MQTT protocol client)
  - LiquidCrystal_I2C.h (LCD16x2 I2C)
@@ -17,8 +18,7 @@ Feature and library used:
 # GUI (Node Monitor & Employee Manager)
 Main file: **"SCAN_node_monitor.py"** (**"karyawan.py"**, **"icons"**, and **"images" need to be in the same folder**)
 
-Python external module/library used:
- - **Python 3.7**
+Python 3.7 module/library used:
  - Pyqt5 (for GUI)
  - PyMongo (for MongoDB Database driver)
  - Paho-Mqtt (MQTT client)
