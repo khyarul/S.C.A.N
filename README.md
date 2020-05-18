@@ -18,6 +18,11 @@ Feature and library used:
 # GUI (Node Monitor & Employee Manager)
 Main file: **"SCAN_node_monitor.py"** (**"karyawan.py"**, **"icons"**, and **"images" need to be in the same folder**)
 
+Feature:
+ - Manage & monitor all Node Machine that connected to the same MQTT server.
+ - Using MongoDB database for Node & Employee Manager.
+ - Unlock door on every Node Machine remotely.
+
 Python 3.7 module/library used:
  - Pyqt5 (for GUI)
  - PyMongo (for MongoDB Database driver)
