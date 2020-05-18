@@ -291,14 +291,11 @@ class EditKaryawan(QWidget):
         if UID and Name and Phone and Email and Address != '':
             global globalID
             data = {'UID': UID, 'Name': Name, 'Picture': Picture, 'Phone': Phone, 'Email': Email, 'Address': Address}
-            try:
-                query = {'UID': globalID}
-                newValue = {'$set': data}
-                collection.update_one(query, newValue)
-                QMessageBox.information(self, 'SUCCESS', 'The Employee has been updated')
-                w.getKaryawan()
-            except:
-                print(globalID)
+            query = {'UID': globalID}
+            newValue = {'$set': data}
+            collection.update_one(query, newValue)
+            QMessageBox.information(self, 'SUCCESS', 'The Employee has been updated')
+            w.getKaryawan()
         else:
             QMessageBox.information(self, 'WARNING', 'Fields can not be empty')
 

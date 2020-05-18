@@ -20,7 +20,7 @@ dbClient = MongoClient("mongodb://localhost:27017/")
 db = dbClient['ATTENDANCE']
 nodeCollection = db['NODE']
 employeeCollection = db['KARYAWAN']
-
+nodeID = None
 #################MQTT Callback Event###########################
 RC = -1
 
@@ -31,8 +31,6 @@ def on_connect(client, userdata, flags, rc):
     RC = rc
     if rc == 0:
         pass
-    # Client.subscribe('UID/Node_' + NODE)
-    # Client.subscribe('STATUS/Node_' + NODE, 2)
     # print('Connection successful')
     elif rc == 1:
         pass
@@ -59,7 +57,6 @@ def on_message(client, userdata, message):
     global TOPIC, PAYLOAD
     PAYLOAD = message.payload = message.payload.decode('utf-8')
     TOPIC = message.topic
-    # print(TOPIC + ':', PAYLOAD)
 
 
 ###############MQTT global variable####################
@@ -70,6 +67,7 @@ Password = ''
 Host = ''
 Port = None
 nodeStatusVar = {}
+doorStatusVar = {}
 
 #################Inisiasi MQTT###########################
 client = mqttClient.Client(Client)
@@ -155,6 +153,7 @@ class MainWindow(QWidget):
         self.pingBtn.clicked.connect(self.getNode)
         self.nodeList = QListWidget()
         self.nodeList.itemSelectionChanged.connect(self.showNode)
+        self.nodeList.doubleClicked.connect(self.editNode)
         self.addBtn = QPushButton('Add')
         self.addBtn.setIcon(QIcon('icons/add.png'))
         self.addBtn.setFont(font)
@@ -267,14 +266,10 @@ class MainWindow(QWidget):
 
     def showNode(self):
         try:
-            # self.nodeAlias.setText('')
-            # self.nodeClient.setText('')
-
             data = self.nodeList.currentItem().text()
             clientID = data.split(' - ')[1]
             clientAlias = data.split(' - ')[0]
-            # list = nodeCollection.find({'Client ID': clientID})
-            # for x in list: pass
+
             self.nodeAlias.setText(clientAlias)
             self.nodeClient.setText(clientID)
             self.nodeStatus.setText('')
@@ -286,24 +281,36 @@ class MainWindow(QWidget):
                 elif nodeStatusVar[clientID] == '0':
                     self.nodeStatus.setText('DISCONNECTED')
                     self.nodeStatus.setStyleSheet('color:red')
+                if doorStatusVar[clientID] == '1':
+                    self.nodeDoorStatus.setText('OPENED')
+                    self.nodeDoorStatus.setStyleSheet('color:green')
+                elif doorStatusVar[clientID] == '0':
+                    self.nodeDoorStatus.setText('CLOSED')
+                    self.nodeDoorStatus.setStyleSheet('color:red')
             except:
                 pass
         except:
             QMessageBox.information(self, 'WARNING', 'This Node is no longer available on Database')
 
     def refreshNode(self):
-        global nodeStatusVar
+        global nodeStatusVar, doorStatusVar
         data = self.nodeList.currentItem().text()
         clientID = data.split(' - ')[1]
         self.nodeStatus.setText('')
         self.nodeDoorStatus.setText('')
         try:
-            if nodeStatusVar[str(clientID)] == '1':
+            if nodeStatusVar[clientID] == '1':
                 self.nodeStatus.setText('CONNECTED')
                 self.nodeStatus.setStyleSheet('color:green')
-            elif nodeStatusVar[str(clientID)] == '0':
+            elif nodeStatusVar[clientID] == '0':
                 self.nodeStatus.setText('DISCONNECTED')
                 self.nodeStatus.setStyleSheet('color:red')
+            if doorStatusVar[clientID] == '1':
+                self.nodeDoorStatus.setText('OPENED')
+                self.nodeDoorStatus.setStyleSheet('color:green')
+            elif doorStatusVar[clientID] == '0':
+                self.nodeDoorStatus.setText('CLOSED')
+                self.nodeDoorStatus.setStyleSheet('color:red')
         except:
             pass
 
@@ -311,7 +318,16 @@ class MainWindow(QWidget):
         self.newNode = AddNode()
 
     def editNode(self):
-        self.editnode = EditNode()
+        try:
+            global nodeID
+            if self.nodeList.selectedItems():
+                data = self.nodeList.currentItem().text()
+                nodeID = data.split(' - ')[1]
+                self.editnode = EditNode()
+            else:
+                QMessageBox.information(self, 'WARNING', 'Please select a Node to edit')
+        except:
+            QMessageBox.information(self, 'WARNING', 'This Node is no longer available on Database')
 
     def deleteNode(self):
         if self.nodeList.selectedItems():
@@ -367,12 +383,12 @@ class MainWindow(QWidget):
                     clientID = data.split(' - ')[1]
                     client.subscribe('STATUS/' + clientID)
                     client.subscribe('UID/' + clientID)
+                    client.subscribe('DOOR/' + clientID)
                     connectThread = threading.Thread(target=self.connectThreadFunc, args=[clientID])
                     connectThread.start()
                 pingThread = threading.Thread(target=self.pingFunc)
                 pingThread.start()
             except:
-                # print('Connection Failed')
                 client.disconnect()
                 self.connectBtn.setChecked(False)
                 self.connectStatus.setText('DISCONNECTED')
@@ -396,23 +412,11 @@ class MainWindow(QWidget):
         # call(['python', 'karyawan.py'])
 
     def connectThreadFunc(self, clientID):
-        global client, TOPIC, PAYLOAD, nodeStatusVar, RC
+        global client, TOPIC, PAYLOAD, nodeStatusVar, doorStatusVar, RC
         while True:
-            if self.connectBtn.isChecked() == False or RC > 0:
-                client.disconnect()
-                self.connectBtn.setChecked(False)
-                self.connectStatus.setText('DISCONNECTED')
-                nodeStatusVar[clientID] = None
-                break
-            if TOPIC == ('STATUS/' + clientID):
-                nodeStatusVar[clientID] = PAYLOAD
-                self.refreshNode()
-                TOPIC = None
-                PAYLOAD = None
+            now = datetime.now()
+            date = now.strftime('%d/%m/%Y')
             if TOPIC == ('UID/' + clientID):
-                now = datetime.now()
-                date = now.strftime('%d/%m/%Y')
-                clock = now.strftime('%H:%M')
                 ######Read data from topic 'UID/node_x'########
                 mode = PAYLOAD.split(':')[0]  # MODE STRING
                 uid = PAYLOAD.split(':')[1]  # UID STRING
@@ -423,6 +427,9 @@ class MainWindow(QWidget):
                     if resultCount == 0:  # if no matching uid send 0
                         client.publish('RESPON/' + clientID, 0)
                         ########Add to log##########
+                        item = self.logList.findItems(date, Qt.MatchExactly)
+                        if len(item) == 0:
+                            self.logList.addItem(date)
                         clock = now.strftime('%H:%M:%S')
                         message = '{} UNKNOWN UID:{}, trying to unlock door at {}'.format(clock, uid, clientID)
                         self.logList.addItem(message)
@@ -431,6 +438,9 @@ class MainWindow(QWidget):
                             name = x['Name']
                         client.publish('RESPON/' + clientID, name)
                         ########Add to log##########
+                        item = self.logList.findItems(date, Qt.MatchExactly)
+                        if len(item) == 0:
+                            self.logList.addItem(date)
                         clock = now.strftime('%H:%M:%S')
                         message = '{} UID:{} Name:{}, unlock door at {}'.format(clock, uid, name, clientID)
                         self.logList.addItem(message)
@@ -439,10 +449,14 @@ class MainWindow(QWidget):
                     if resultCount == 0:  # if no matching uid send 0
                         client.publish('RESPON/' + clientID, 0)
                         ########Add to log##########
+                        item = self.logList.findItems(date, Qt.MatchExactly)
+                        if len(item) == 0:
+                            self.logList.addItem(date)
                         clock = now.strftime('%H:%M:%S')
                         message = '{} UNKNOWN UID:{}, trying to attend at {}'.format(clock, uid, clientID)
                         self.logList.addItem(message)
                     elif resultCount == 1:  # MATCH Unique UID on database send back 'name'
+                        clock = now.strftime('%H:%M')
                         for x in employeeCollection.find(query):
                             name = x['Name']
                         if date in x:  # If person has attend
@@ -453,11 +467,39 @@ class MainWindow(QWidget):
                         employeeCollection.update_one(query, newValue)
                         client.publish('RESPON/' + clientID, name)
                         ########Add to log##########
+                        item = self.logList.findItems(date, Qt.MatchExactly)
+                        if len(item) == 0:
+                            self.logList.addItem(date)
                         clock = now.strftime('%H:%M:%S')
                         message = '{} UID:{} Name:{}, attend at {}'.format(clock, uid, name, clientID)
                         self.logList.addItem(message)
                 TOPIC = None
                 PAYLOAD = None
+            if TOPIC == ('STATUS/' + clientID):
+                nodeStatusVar[clientID] = PAYLOAD
+                self.refreshNode()
+                TOPIC = None
+                PAYLOAD = None
+            if TOPIC == ('DOOR/' + clientID):
+                doorStatusVar[clientID] = PAYLOAD
+                self.refreshNode()
+                item = self.logList.findItems(date, Qt.MatchExactly)
+                if len(item) == 0:
+                    self.logList.addItem(date)
+                clock = now.strftime('%H:%M:%S')
+                if PAYLOAD == '1':
+                    message = '{} DOOR OPENED at {}'.format(clock, clientID)
+                elif PAYLOAD == '0':
+                    message = '{} DOOR CLOSED at {}'.format(clock, clientID)
+                self.logList.addItem(message)
+                TOPIC = None
+                PAYLOAD = None
+            if self.connectBtn.isChecked() == False or RC > 0:
+                client.disconnect()
+                self.connectBtn.setChecked(False)
+                self.connectStatus.setText('DISCONNECTED')
+                nodeStatusVar[clientID] = None
+                break
 
     def pingFunc(self):
         global client, RC
@@ -487,7 +529,6 @@ class AddNode(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle('Add Node')
-        # self.setWindowIcon(QIcon('icons/person.png'))
         self.resize(300, 100)
         self.setup()
         self.show()
@@ -545,12 +586,12 @@ class EditNode(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle('Update Node')
-        # self.setWindowIcon(QIcon('icons/person.png'))
         self.resize(300, 100)
         self.setup()
         self.show()
 
     def setup(self):
+        self.getNode()
         self.widget()
         self.layouts()
 
@@ -558,9 +599,10 @@ class EditNode(QWidget):
         self.aliasLabel = QLabel('Alias')
         self.clientLabel = QLabel('Client ID')
         self.aliasInput = QLineEdit()
+        self.aliasInput.setText(self.alias)
         self.aliasInput.setPlaceholderText('Alias (Can be location name or something)')
         self.clientInput = QLineEdit()
-        self.clientInput.setText('Node_')
+        self.clientInput.setText(self.clientId)
         self.clientInput.setPlaceholderText('Should be unique')
         self.addBtn = QPushButton('Update Node')
         self.addBtn.setFixedWidth(100)
@@ -581,19 +623,25 @@ class EditNode(QWidget):
         ##################Atur Main Windows Layout#####################
         self.setLayout(self.mainLayout)
 
+    def getNode(self):
+        global nodeID
+        data = nodeCollection.find({'Client ID': nodeID})
+        for x in data: pass
+        self.alias = x['Alias']
+        self.clientId = x['Client ID']
+
     def editFunc(self):
+        global nodeID
         Alias = self.aliasInput.text()
         ClientID = self.clientInput.text()
 
-        result_count = nodeCollection.count_documents({'Client ID': ClientID})
         if Alias and ClientID != '':
-            if result_count == 0:
-                data = {'Alias': Alias, 'Client ID': ClientID}
-                nodeCollection.insert_one(data)
-                QMessageBox.information(self, 'SUCCESS', 'New Node has been added')
-                w.getNode()
-            else:
-                QMessageBox.information(self, 'WARNING', 'Client ID already exist, try again')
+            data = {'Alias': Alias, 'Client ID': ClientID}
+            query = {'Client ID': nodeID}
+            newValue = {'$set': data}
+            nodeCollection.update_one(query, newValue)
+            QMessageBox.information(self, 'SUCCESS', 'The Node has been updated')
+            w.getNode()
         else:
             QMessageBox.information(self, 'WARNING', 'Fields can not be empty')
 

@@ -16,7 +16,7 @@
 #define SS_PIN D8
 #define RST_PIN D4
 
-LiquidCrystal_I2C lcd(0x27, 16, 2);
+LiquidCrystal_I2C lcd(0x3F, 16, 2);
 MFRC522 rfid(SS_PIN, RST_PIN); // Instance of the class
 MFRC522::MIFARE_Key key;
 
@@ -25,8 +25,8 @@ const char* pass PROGMEM = "amanbehehe";          //WiFi pass
 
 const char* broker PROGMEM = "192.168.43.208";    //mqtt host
 const int16_t port PROGMEM = 1883;                //mqtt port
-const char* clientID PROGMEM = "Node_1";          //mqtt client ID, cukup ganti angka di belakangnya saja, "Node_" jangan diganti/dihapus
-const char* host PROGMEM = "S.C.A.N-Node_1";      //OTA host name, bebas
+const char* clientID PROGMEM = "Node_2";          //mqtt client ID, cukup ganti angka di belakangnya saja, "Node_" jangan diganti/dihapus
+const char* host PROGMEM = "S.C.A.N-Node_2";      //OTA host name, bebas
 const char* username PROGMEM = "sentinel";        //mqtt username
 const char* password PROGMEM = "I.A.N.H";         //mqtt pass
 
@@ -144,20 +144,27 @@ class mqttLoop : public Task {
     }
 } mqtt_loop;
 //==================================================================
+//======================Button and Door Sensor======================
 class buttonLoop : public Task {
   public:
     uint16_t reed;
-    bool door, doorState;
+    bool door = 0, doorState = 0;
+    void setup() {
+      //read Door Sensor on startup
+      readDoor();
+      if (door == 0) {
+        mqtt.publish(doorTopic, "0");
+      }
+      else{
+        mqtt.publish(doorTopic, "1");
+      }
+    }
+    //===========
     void loop() {
       preButton = digitalRead(TX);
       doorButton = digitalRead(D3);
-      reed = analogRead(A0);
-      if (reed < 512) {
-        door = 0;
-      }
-      else {
-        door = 1;
-      }
+      //Baca & kirim status pintu saat berubah dari kondisi sebelumnya
+      readDoor();
       if (doorState != door) {
         char buff[2];
         sprintf(buff, "%d", door);
@@ -165,6 +172,16 @@ class buttonLoop : public Task {
         doorState = door;
       }
       delay(50);
+    }
+    //Baca Sensor Reed/Magnet
+    void readDoor() {
+      reed = analogRead(A0);
+      if (reed < 512) {
+        door = 0;
+      }
+      else {
+        door = 1;
+      }
     }
 } button_loop;
 //==================================================================
