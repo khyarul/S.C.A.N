@@ -52,6 +52,9 @@ class mainLoop : public Task {
     void loop() {
 mulai:
       lcd.setCursor(0, 0); lcd.print(TIME);
+      //      char reedBuff[16];
+      //      sprintf(reedBuff, "%4d", reed);
+      //      lcd.setCursor(0,0); lcd.print(reedBuff);
       if (preButton == 0) {
         SCREEN = 1;
         MODE = 1;
@@ -80,7 +83,7 @@ mulai:
         idStr += String(rfid.uid.uidByte[i], HEX);
       }
       idStr.toUpperCase();
-      if (MODE == 0){
+      if (MODE == 0) {
         idStr = "0:" + idStr;
       }
       else {
@@ -103,13 +106,6 @@ mulai:
           lcd.setCursor(0, 1); lcd.print(F("UNREGISTERED ID"));
           break;
         }
-//        else if (RESPON == "1") {
-//          BUZZER = 2;
-//          lcd.clear();
-//          lcd.setCursor(0, 0); lcd.print(F("    Sorry :(   "));
-//          lcd.setCursor(0, 1); lcd.print(F("DUPLICATED ID"));
-//          break;
-//        }
         else {
           BUZZER = 1;
           if (MODE == 0) {
@@ -150,9 +146,24 @@ class mqttLoop : public Task {
 //==================================================================
 class buttonLoop : public Task {
   public:
+    uint16_t reed;
+    bool door, doorState;
     void loop() {
       preButton = digitalRead(TX);
       doorButton = digitalRead(D3);
+      reed = analogRead(A0);
+      if (reed < 512) {
+        door = 0;
+      }
+      else {
+        door = 1;
+      }
+      if (doorState != door) {
+        char buff[2];
+        sprintf(buff, "%d", door);
+        mqtt.publish(doorTopic, buff);
+        doorState = door;
+      }
       delay(50);
     }
 } button_loop;
@@ -215,7 +226,7 @@ class screenLoop : public Task {
       if (SCREEN == 1) {
         SCREEN = 0;
         lcd.backlight();
-        unsigned long now = millis();
+        uint32_t now = millis();
         while ((millis() - now) < (screenTimer * 1000)) {
           if (SCREEN == 1) {
             SCREEN = 0;
