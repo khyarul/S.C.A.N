@@ -11,7 +11,7 @@
      - [x] LiquidCrystal_I2C.h (LCD16x2 I2C)
      - [x] MFRC522.h (RFID SPI module 13.56MHz)
      - [x] ArduinoOTA.h (wireless/no-usb programming)
-     - [ ] Reed/magnetic sensor for Door state
+     - [x] Reed/magnetic sensor for Door state
      - [x] solenoid door lock port max. 12V/1A (12W)
      - [x] 5V/3A (15W) power supply input
 
