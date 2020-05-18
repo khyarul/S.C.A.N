@@ -132,6 +132,7 @@ class MainWindow(QWidget):
         self.unlockDoorBtn.setFont(font)
         self.unlockDoorBtn.setFixedWidth(100)
         self.unlockDoorBtn.clicked.connect(self.unlockDoor)
+        self.unlockDoorBtn.setDisabled(True)
 
         self.serverConfigFrame = QFrame()
         self.serverConfigFrame.setStyleSheet('background-color: white;')
@@ -256,6 +257,14 @@ class MainWindow(QWidget):
         self.rightBotLayout.addWidget(self.deleteBtn)
 
         self.setLayout(self.mainLayout)
+
+    def enableConfig(self, command):
+        self.clientIDInput.setEnabled(command)
+        self.hostInput.setEnabled(command)
+        self.portInput.setEnabled(command)
+        self.usernameInput.setEnabled(command)
+        self.passInput.setEnabled(command)
+        self.authCheck.setEnabled(command)
 
     def getNode(self):
         self.nodeList.clear()
@@ -388,10 +397,14 @@ class MainWindow(QWidget):
                     connectThread.start()
                 pingThread = threading.Thread(target=self.pingFunc)
                 pingThread.start()
+                self.enableConfig(False)
+                self.unlockDoorBtn.setEnabled(True)
             except:
                 client.disconnect()
                 self.connectBtn.setChecked(False)
                 self.connectStatus.setText('DISCONNECTED')
+                self.enableConfig(True)
+                self.unlockDoorBtn.setDisabled(True)
         else:
             client.disconnect()
             self.connectStatus.setText('DISCONNECTED')
@@ -404,6 +417,8 @@ class MainWindow(QWidget):
             if len(item) == 0:
                 self.logList.addItem(date)
             self.logList.addItem(clock + ' DISCONNECTED from ' + Host + ':' + Port + ' RC=' + str(RC))
+            self.enableConfig(True)
+            self.unlockDoorBtn.setDisabled(True)
             RC = -1
 
     def openEmployee(self):
