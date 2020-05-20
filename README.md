@@ -14,7 +14,11 @@
      - [x] Reed/magnetic sensor for Door state
      - [x] solenoid door lock port max. 12V/1A (12W)
      - [x] 5V/3A (15W) power supply input
-
+   
+   - Recommended ESP8266 Wemos D1 Mini Arduino Configuration:
+   
+   ![arduino config](https://user-images.githubusercontent.com/50608159/82400250-0d21d080-9a81-11ea-8ff0-8537a739b395.png)
+   
 ## GUI (Node Monitor & Employee Manager)
 - Main file: **"SCAN_node_monitor.py"** (**"karyawan.py"**, **"icons"**, and **"images" need to be in the same folder**)
 
