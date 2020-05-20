@@ -19,6 +19,19 @@
    
    ![arduino config](https://user-images.githubusercontent.com/50608159/82400250-0d21d080-9a81-11ea-8ff0-8537a739b395.png)
    
+   - Mechanic Documentation Photo:
+     - **Acrylic Case for LCD, RFID sensor, button, and buzzer. Install it outside the room.**
+![img](https://i.ibb.co/nwVVGG5/IMG-20200515-223923.jpg)
+![img](https://i.ibb.co/mNFmP1P/IMG-20200515-223940.jpg)
+![img](https://i.ibb.co/tsFh6h2/IMG-20200515-223957.jpg)
+     - **Acrylic case for controller part, reed/magnet sensor and solenoid port. Install it inside the room.**
+![img](https://i.ibb.co/6RDryc6/IMG-20200515-224018.jpg)
+![img](https://i.ibb.co/F5jDfyX/IMG-20200515-224027.jpg)
+     - **Solenoid port and small hole for reed/magnet sensor wire**
+![img](https://i.ibb.co/JRx0fvC/IMG-20200515-224034.jpg)
+![img](https://i.ibb.co/M5sH3cK/IMG-20200515-224110.jpg)
+![img](https://i.ibb.co/rQfbF8Z/IMG-20200515-224124.jpg)
+   
 ## GUI (Node Monitor & Employee Manager)
 - Main file: **"SCAN_node_monitor.py"** (**"karyawan.py"**, **"icons"**, and **"images" need to be in the same folder**)
 
