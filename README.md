@@ -6,7 +6,7 @@
 
    - Feature and library used:
      - [x] Dual Mode: Tap to Unlock Door and Attendance Mode
-     - [x] Scheduler.h (Multitask)
+     - [x] Scheduler.h (Multitask) from [Here](https://github.com/nrwiersma/ESP8266Scheduler)
      - [x] PubSubClient.h (MQTT protocol client)
      - [x] LiquidCrystal_I2C.h (LCD16x2 I2C)
      - [x] MFRC522.h (RFID SPI module 13.56MHz)
