@@ -16,19 +16,19 @@
 #define SS_PIN D8
 #define RST_PIN D4
 
-LiquidCrystal_I2C lcd(0x3F, 16, 2);
+LiquidCrystal_I2C lcd(0x3F, 16, 2);		//use 0x27 if you have different lcd i2c address
 MFRC522 rfid(SS_PIN, RST_PIN); // Instance of the class
 MFRC522::MIFARE_Key key;
 
-const char* ssid PROGMEM = "Sentinel Max Pro M1"; //WiFi Host
-const char* pass PROGMEM = "amanbehehe";          //WiFi pass
+const char* ssid PROGMEM = "SSID name"; //WiFi Host
+const char* pass PROGMEM = "WiFi Password";          //WiFi pass
 
-const char* broker PROGMEM = "192.168.43.208";    //mqtt host
+const char* broker PROGMEM = "MQTT host/server";    //mqtt host
 const int16_t port PROGMEM = 1883;                //mqtt port
-const char* clientID PROGMEM = "Node_2";          //mqtt client ID, cukup ganti angka di belakangnya saja, "Node_" jangan diganti/dihapus
-const char* host PROGMEM = "S.C.A.N-Node_2";      //OTA host name, bebas
-const char* username PROGMEM = "sentinel";        //mqtt username
-const char* password PROGMEM = "I.A.N.H";         //mqtt pass
+const char* clientID PROGMEM = "Client ID";          //mqtt client ID, don't use character: " - "
+const char* host PROGMEM = "OTA host name";      //OTA host name, bebas
+const char* username PROGMEM = "MQTT username";        //mqtt username
+const char* password PROGMEM = "MQTT password";         //mqtt pass
 
 int8_t BUZZER = 0, preButton = 1, doorButton = 1, SCREEN = 1, MODE = 0;
 uint8_t screenTimer = 10;   //Screen will turn OFF after x seconds idle (default 10s)
