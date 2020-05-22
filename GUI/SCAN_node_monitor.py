@@ -1,7 +1,8 @@
 """Programmed by Khyarul Arham"""
 ########GUI Module#######
-from subprocess import Popen
+from subprocess import Popen, PIPE
 import sys
+import platform
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
@@ -422,7 +423,10 @@ class MainWindow(QWidget):
             RC = -1
 
     def openEmployee(self):
-        Popen('python karyawan.py')
+        if platform.system() == 'Linux':
+            Popen('python3 karyawan.py', shell=True, stdout=PIPE)
+        else:
+            Popen('python karyawan.py', shell=True, stdout=PIPE)
         # os.system('python karyawan.py')
         # call(['python', 'karyawan.py'])
 
