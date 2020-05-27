@@ -33,6 +33,7 @@
 ![img](https://i.ibb.co/rQfbF8Z/IMG-20200515-224124.jpg)
    
 ## GUI (Node Monitor & Employee Manager)
+- Tested on Windows 10 PC and Ubuntu Mate 18.04 64bit on Raspberry Pi 3 (Should be supported with Ubuntu 64bit on PC)
 - Main file: **"SCAN_node_monitor.py"** (**"karyawan.py"**, **"icons"**, and **"images" need to be in the same folder**)
 
 - Feature:
