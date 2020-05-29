@@ -18,7 +18,24 @@
    - Recommended ESP8266 Wemos D1 Mini Arduino Configuration:
    
    ![arduino config](https://user-images.githubusercontent.com/50608159/82400250-0d21d080-9a81-11ea-8ff0-8537a739b395.png)
+ 
+   - Wemos D1 Mini Port Allocation:
    
+ PORT |	FUNCTION |	DEVICE
+ -----|----------|-------   
+ D1 |	I2C SCL |	LCD 16x2
+ D2 |	I2C SDA |	LCD 16x2
+ D4 |	SPI Reset |	RC522
+ D5 |	SPI SCK |	RC522
+ D6 |	SPI MISO |	RC522
+ D7 |	SPI MOSI	| RC522
+ D8 |	SPI SS	| RC522
+ D0 |	Digital Output	| Solenoid
+ TX |	Digital Input	| Attendance Mode button
+ RX |	Digital Output |	Buzzer
+ D3 |	Digital Input |	“Unlock Door” Mode button
+ A0 |	Analog Input |	Magnetic Switch/Sensor
+
    - Mechanic Documentation Photo:
      - **Acrylic Case for LCD, RFID sensor, button, and buzzer. Install it outside the room.**
 ![img](https://i.ibb.co/nwVVGG5/IMG-20200515-223923.jpg)
