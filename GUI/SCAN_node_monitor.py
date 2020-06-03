@@ -398,6 +398,9 @@ class MainWindow(QWidget):
                     connectThread.start()
                 pingThread = threading.Thread(target=self.pingFunc)
                 pingThread.start()
+                client.subscribe('PERIOD')
+                periodThread = threading.Thread(target=self.periodFunc)
+                periodThread.start()
                 self.enableConfig(False)
                 self.unlockDoorBtn.setEnabled(True)
             except:
@@ -535,6 +538,26 @@ class MainWindow(QWidget):
                 self.connectStatus.setText('DISCONNECTED')
                 break
             time.sleep(5)
+
+    def periodFunc(self):
+        global TOPIC, PAYLOAD, client
+        while True:
+            now = datetime.now()
+            date = now.strftime('%d/%m/%Y')
+            if TOPIC == 'PERIOD':
+                item = self.logList.findItems(date, Qt.MatchExactly)
+                if len(item) == 0:
+                    self.logList.addItem(date)
+                message = '         time needed for authentication flow: {} ms'.format(PAYLOAD)
+                self.logList.addItem(message)
+                TOPIC = None
+                PAYLOAD = None
+            if self.connectBtn.isChecked() == False or RC > 0:
+                # RC = -1
+                client.disconnect()
+                self.connectBtn.setChecked(False)
+                self.connectStatus.setText('DISCONNECTED')
+                break
 
     def unlockDoor(self):
         global client
