@@ -95,25 +95,42 @@ mulai:
       //      lcd.setCursor(0, 1); lcd.print(idStr);
       strcpy_P(id, idStr.c_str());
       mqtt.publish(uidTopic, id);
-
+      //"now" and "responTime" for measuring response time from UID publish until receive again the response message from Monitor Client (the amount of time needed for authentication process)
+      uint32_t responTime, now = millis();
+      char buff[6];
       while (1) {
-        if (RESPON == "") {
+        if (RESPON == "" && (millis() - now >= 4000)) {         //Authentication timeout
+          BUZZER = 2;
+          lcd.clear();
+          lcd.setCursor(0, 0); lcd.print(F("Sorry:( TIMEOUT"));
+          lcd.setCursor(0, 1); lcd.print(F(" Pls TRY AGAIN "));
+          break;
         }
-        else if (RESPON == "0") {
+        else if (RESPON == "0") {                               //Unregistered, RESPON from Monitor Client = 0
+          responTime = millis() - now;
+          sprintf(buff, "%d", responTime);
           BUZZER = 2;
           lcd.clear();
           lcd.setCursor(0, 0); lcd.print(F("    Sorry :(   "));
           lcd.setCursor(0, 1); lcd.print(F("UNREGISTERED ID"));
+          mqtt.publish("PERIOD", buff);
           break;
         }
         else {
+          responTime = millis() - now;
+          sprintf(buff, "%d", responTime);
           BUZZER = 1;
+          lcd.clear();
           if (MODE == 0) {
             LOCK = "0";
+            lcd.setCursor(0, 0); lcd.print(RESPON);
+            lcd.setCursor(0, 1); lcd.print(F("UNLOCK THE DOOR "));
           }
-          lcd.clear();
-          lcd.setCursor(0, 0); lcd.print(F("SUCCESS, WELCOME"));
-          lcd.setCursor(0, 1); lcd.print(RESPON);
+          else {
+            lcd.setCursor(0, 0); lcd.print(RESPON);
+            lcd.setCursor(0, 1); lcd.print(F("   PRESENT :)   "));
+          }
+          mqtt.publish("PERIOD", buff);
           break;
         }
         yield();
