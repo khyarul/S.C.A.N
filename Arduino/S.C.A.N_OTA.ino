@@ -116,7 +116,7 @@ mulai:
           mqtt.publish("PERIOD", buff);
           break;
         }
-        else {
+        else if (RESPON != "" && RESPON != "0") {
           responTime = millis() - now;
           sprintf(buff, "%d", responTime);
           BUZZER = 1;
