@@ -118,7 +118,7 @@ class MainWindow(QWidget):
         self.connectBtn.setStyleSheet('background-color: rgb(122, 255, 112);')
         self.connectBtn.setIcon(QIcon('icons/connect'))
         self.connectBtn.setFont(font)
-        self.connectBtn.setFixedWidth(100)
+        self.connectBtn.setFixedWidth(110)
         self.connectBtn.toggled.connect(self.connectMqtt)
         self.connectStatus = QLabel('DISCONNECTED')
 
@@ -447,7 +447,7 @@ class MainWindow(QWidget):
                 #########UNLOCK DOOR MODE##########
                 if mode == '0':
                     if resultCount == 0:  # if no matching uid send 0
-                        client.publish('RESPON/' + clientID, 0)
+                        client.publish('RESPON/' + clientID, '0')
                         ########Add to log##########
                         item = self.logList.findItems(date, Qt.MatchExactly)
                         if len(item) == 0:
@@ -469,7 +469,7 @@ class MainWindow(QWidget):
                 #########ATTENDANCE MODE##########
                 elif mode == '1':
                     if resultCount == 0:  # if no matching uid send 0
-                        client.publish('RESPON/' + clientID, 0)
+                        client.publish('RESPON/' + clientID, '0')
                         ########Add to log##########
                         item = self.logList.findItems(date, Qt.MatchExactly)
                         if len(item) == 0:
@@ -548,7 +548,7 @@ class MainWindow(QWidget):
                 item = self.logList.findItems(date, Qt.MatchExactly)
                 if len(item) == 0:
                     self.logList.addItem(date)
-                message = '         time needed for authentication flow: {} ms'.format(PAYLOAD)
+                message = '                  time needed for authentication flow: {} ms'.format(PAYLOAD)
                 self.logList.addItem(message)
                 TOPIC = None
                 PAYLOAD = None

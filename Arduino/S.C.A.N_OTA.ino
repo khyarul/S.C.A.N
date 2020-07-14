@@ -20,16 +20,17 @@ LiquidCrystal_I2C lcd(0x27, 16, 2);
 MFRC522 rfid(SS_PIN, RST_PIN); // Instance of the class
 MFRC522::MIFARE_Key key;
 
-const char* ssid PROGMEM = "Sentinel Max Pro M1"; //WiFi Host
-const char* pass PROGMEM = "amanbehehe";          //WiFi pass
+const char* ssid PROGMEM = "WiFi SSID"; //WiFi Host
+const char* pass PROGMEM = "WiFi password";          //WiFi pass
 
 const char* broker PROGMEM = "192.168.43.9";    //mqtt host
 const int16_t port PROGMEM = 1884;              //mqtt port
 const char* clientID PROGMEM = "Node_1";        //mqtt client ID, cukup ganti angka di belakangnya saja, "Node_" jangan diganti/dihapus
 const char* host PROGMEM = "S.C.A.N-Node_1";    //OTA host name, bebas
+const char* otaPass PROGMEM = "51eee58782ddfa75220078c574e15142"; //is "OTAPASSWORD" after hashed, OTA update MD5 hashed password, change with your own password with md5 hash
 const int8_t auth PROGMEM = 1;                  //authentication require: use username & password (1 = yes, 0 = no)
 const char* username PROGMEM = "SCAN_PNJ";      //mqtt username
-const char* password PROGMEM = "1903423002";    //mqtt pass
+const char* password PROGMEM = "mqttpassword";    //mqtt pass
 
 int8_t BUZZER = 0, preButton = 1, doorButton = 1, SCREEN = 1, MODE = 0;
 uint8_t screenTimer = 10;   //Screen will turn OFF after x seconds idle (default 10s)
@@ -306,7 +307,7 @@ void setup() {
   }
 
   ArduinoOTA.setHostname(host);
-  ArduinoOTA.setPasswordHash("abef7bb1485a0a3d338debe3b1715fe8"); //change with your own password with md5 hash
+  ArduinoOTA.setPasswordHash(otaPass);
   ArduinoOTA.onStart([]() {});
   ArduinoOTA.onEnd([]() {});
   ArduinoOTA.onError([](ota_error_t error) {
