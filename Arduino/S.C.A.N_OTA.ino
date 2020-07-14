@@ -16,22 +16,25 @@
 #define SS_PIN D8
 #define RST_PIN D4
 
-LiquidCrystal_I2C lcd(0x3F, 16, 2);		//use 0x27 if you have different lcd i2c address
+LiquidCrystal_I2C lcd(0x27, 16, 2);
 MFRC522 rfid(SS_PIN, RST_PIN); // Instance of the class
 MFRC522::MIFARE_Key key;
 
-const char* ssid PROGMEM = "SSID name"; //WiFi Host
-const char* pass PROGMEM = "WiFi Password";          //WiFi pass
+const char* ssid PROGMEM = "Sentinel Max Pro M1"; //WiFi Host
+const char* pass PROGMEM = "amanbehehe";          //WiFi pass
 
-const char* broker PROGMEM = "MQTT host/server";    //mqtt host
-const int16_t port PROGMEM = 1883;                //mqtt port
-const char* clientID PROGMEM = "Client ID";          //mqtt client ID, don't use character: " - "
-const char* host PROGMEM = "OTA host name";      //OTA host name, bebas
-const char* username PROGMEM = "MQTT username";        //mqtt username
-const char* password PROGMEM = "MQTT password";         //mqtt pass
+const char* broker PROGMEM = "192.168.43.9";    //mqtt host
+const int16_t port PROGMEM = 1884;              //mqtt port
+const char* clientID PROGMEM = "Node_1";        //mqtt client ID, cukup ganti angka di belakangnya saja, "Node_" jangan diganti/dihapus
+const char* host PROGMEM = "S.C.A.N-Node_1";    //OTA host name, bebas
+const int8_t auth PROGMEM = 1;                  //authentication require: use username & password (1 = yes, 0 = no)
+const char* username PROGMEM = "SCAN_PNJ";      //mqtt username
+const char* password PROGMEM = "1903423002";    //mqtt pass
 
 int8_t BUZZER = 0, preButton = 1, doorButton = 1, SCREEN = 1, MODE = 0;
 uint8_t screenTimer = 10;   //Screen will turn OFF after x seconds idle (default 10s)
+//for measuring response time from UID publish until receive again the response message from Monitor Client (the amount of time needed for authentication process)
+uint32_t sendTime, receiveTime; //"sendTime" after publish UID, "receiveTime" after receive the response from Node Monitor
 
 WiFiClient wemos;
 PubSubClient mqtt;
@@ -95,11 +98,11 @@ mulai:
       //      lcd.setCursor(0, 1); lcd.print(idStr);
       strcpy_P(id, idStr.c_str());
       mqtt.publish(uidTopic, id);
-      //"now" and "responTime" for measuring response time from UID publish until receive again the response message from Monitor Client (the amount of time needed for authentication process)
-      uint32_t responTime, now = millis();
+      sendTime = millis();  //start timer after publish
+
       char buff[6];
       while (1) {
-        if (RESPON == "" && (millis() - now >= 4000)) {         //Authentication timeout
+        if (RESPON == "" && (millis() - sendTime >= 4000)) {         //Authentication timeout
           BUZZER = 2;
           lcd.clear();
           lcd.setCursor(0, 0); lcd.print(F("Sorry:( TIMEOUT"));
@@ -107,8 +110,7 @@ mulai:
           break;
         }
         else if (RESPON == "0") {                               //Unregistered, RESPON from Monitor Client = 0
-          responTime = millis() - now;
-          sprintf(buff, "%d", responTime);
+          sprintf(buff, "%d", receiveTime);
           BUZZER = 2;
           lcd.clear();
           lcd.setCursor(0, 0); lcd.print(F("    Sorry :(   "));
@@ -117,8 +119,7 @@ mulai:
           break;
         }
         else if (RESPON != "" && RESPON != "0") {
-          responTime = millis() - now;
-          sprintf(buff, "%d", responTime);
+          sprintf(buff, "%d", receiveTime);
           BUZZER = 1;
           lcd.clear();
           if (MODE == 0) {
@@ -135,6 +136,8 @@ mulai:
         }
         yield();
       }
+      sendTime = 0;
+      receiveTime = 0;
       RESPON = "";
       MODE = 0;
       rfid.PICC_HaltA();        // Halt PICC
@@ -149,7 +152,12 @@ class mqttLoop : public Task {
   public:
     void loop() {
       if (!mqtt.connected()) {
-        mqtt.connect(clientID, username, password, statusTopic, 2, 0, "0");
+        if (auth == 1) {
+          mqtt.connect(clientID, username, password, statusTopic, 2, 0, "0");   //mqtt.connect(clientID, statusTopic, 2, 0, "0");
+        }
+        else {
+          mqtt.connect(clientID, statusTopic, 2, 0, "0");
+        }
         mqtt.publish(statusTopic, "1"); //1=CONNECT, 0=DISCONNECT
         mqtt.subscribe(responTopic);
         mqtt.subscribe("PING");
@@ -157,7 +165,7 @@ class mqttLoop : public Task {
         mqtt.subscribe(lockTopic);
       }
       mqtt.loop();
-      delay(20);
+      delay(10);
     }
 } mqtt_loop;
 //==================================================================
@@ -172,7 +180,7 @@ class buttonLoop : public Task {
       if (door == 0) {
         mqtt.publish(doorTopic, "0");
       }
-      else{
+      else {
         mqtt.publish(doorTopic, "1");
       }
     }
@@ -267,13 +275,14 @@ class screenLoop : public Task {
             lcd.backlight();
             now = millis();
           }
-          yield();
+          delay(50);
         }
         lcd.noBacklight();
       }
       else {
         lcd.noBacklight();
       }
+      delay(50);
     }
 } screen_loop;
 //==================================================================
@@ -297,7 +306,7 @@ void setup() {
   }
 
   ArduinoOTA.setHostname(host);
-  ArduinoOTA.setPasswordHash("abef7bb1485a0a3d338debe3b1715fe8");
+  ArduinoOTA.setPasswordHash("abef7bb1485a0a3d338debe3b1715fe8"); //change with your own password with md5 hash
   ArduinoOTA.onStart([]() {});
   ArduinoOTA.onEnd([]() {});
   ArduinoOTA.onError([](ota_error_t error) {
@@ -317,7 +326,12 @@ void setup() {
   strcat_P(doorTopic, clientID);
   mqtt.setClient(wemos);
   mqtt.setServer(broker, port);
-  mqtt.connect(clientID, username, password, statusTopic, 2, 0, "0");   //broker akan mengirim will message "0" (disconnect) ke client lain yg subscribe ke topic ini jika node ini disconnect
+  if (auth == 1) {
+    mqtt.connect(clientID, username, password, statusTopic, 2, 0, "0");   //broker akan mengirim will message "0" (disconnect) ke client lain yg subscribe ke topic ini jika node ini disconnect
+  }
+  else {
+    mqtt.connect(clientID, statusTopic, 2, 0, "0");
+  }
   mqtt.setCallback(callback);
   mqtt.publish(statusTopic, "1"); //kirim status "1"=CONNECT
   mqtt.subscribe(responTopic);
@@ -350,6 +364,7 @@ void callback(char* topic, byte* payload, uint16_t len) {
   //int value = payloadStr.toInt();
   if (strcmp_P(topic, responTopic) == 0) {  //jika dapat message di responTopic
     //strcpy_P(TOPIC, topic);
+    receiveTime = millis() - sendTime;  //get response time for authentication flow
     RESPON = payloadStr;
   }
   if (strcmp_P(topic, "PING") == 0 && payloadStr == "ping") { //jika dapat message "ping" di topic "PING"
