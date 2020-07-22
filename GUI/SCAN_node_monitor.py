@@ -563,7 +563,7 @@ class MainWindow(QWidget):
         global client
         data = self.nodeList.currentItem().text()
         clientID = data.split(' - ')[1]
-        client.publish('LOCK/' + clientID, 0)
+        client.publish('LOCK/' + clientID, '0')
 
 
 ################################################################################
