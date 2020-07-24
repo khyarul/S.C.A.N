@@ -17,7 +17,7 @@
    
    - Recommended ESP8266 Wemos D1 Mini Arduino Configuration:
    
-   ![arduino config](https://user-images.githubusercontent.com/50608159/82400250-0d21d080-9a81-11ea-8ff0-8537a739b395.png)
+   ![arduino config](https://user-images.githubusercontent.com/50608159/88420036-6b1bbd00-ce10-11ea-89b4-321394aa3499.png)
  
    - Wemos D1 Mini Port Allocation:
    
