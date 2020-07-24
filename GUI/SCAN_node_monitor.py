@@ -275,6 +275,7 @@ class MainWindow(QWidget):
         self.nodeList.setCurrentRow(0)  # atur kursor ke item pertama
 
     def showNode(self):
+        global nodeStatusVar, doorStatusVar
         try:
             data = self.nodeList.currentItem().text()
             clientID = data.split(' - ')[1]
@@ -288,13 +289,13 @@ class MainWindow(QWidget):
                 if nodeStatusVar[clientID] == '1':
                     self.nodeStatus.setText('CONNECTED')
                     self.nodeStatus.setStyleSheet('color:green')
-                elif nodeStatusVar[clientID] == '0':
+                else:
                     self.nodeStatus.setText('DISCONNECTED')
                     self.nodeStatus.setStyleSheet('color:red')
                 if doorStatusVar[clientID] == '1':
                     self.nodeDoorStatus.setText('OPENED')
                     self.nodeDoorStatus.setStyleSheet('color:green')
-                elif doorStatusVar[clientID] == '0':
+                else:
                     self.nodeDoorStatus.setText('CLOSED')
                     self.nodeDoorStatus.setStyleSheet('color:red')
             except:
@@ -312,13 +313,13 @@ class MainWindow(QWidget):
             if nodeStatusVar[clientID] == '1':
                 self.nodeStatus.setText('CONNECTED')
                 self.nodeStatus.setStyleSheet('color:green')
-            elif nodeStatusVar[clientID] == '0':
+            else:
                 self.nodeStatus.setText('DISCONNECTED')
                 self.nodeStatus.setStyleSheet('color:red')
             if doorStatusVar[clientID] == '1':
                 self.nodeDoorStatus.setText('OPENED')
                 self.nodeDoorStatus.setStyleSheet('color:green')
-            elif doorStatusVar[clientID] == '0':
+            else:
                 self.nodeDoorStatus.setText('CLOSED')
                 self.nodeDoorStatus.setStyleSheet('color:red')
         except:
