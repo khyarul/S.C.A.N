@@ -66,5 +66,5 @@
 
 ## Support & DONATE this open source project:
   - PAYPAL  : [SentinelCreative](https://www.paypal.me/sentinelcreative "PAYPAL")
-  - BNI     : 0718053662 (Khyarul Arham)
-  - Mandiri : 1130012279398 (Khyarul Arham)
+  - BNI     : 1284959883 (Khyarul Arham)
+  - Jago    : 504120557241 (Khyarul Arham)
